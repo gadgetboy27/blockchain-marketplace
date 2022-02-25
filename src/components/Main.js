@@ -1,6 +1,6 @@
 import React, { Component } from 'react';
 
- 
+
 class Main extends Component {
   
     render() {
@@ -54,7 +54,7 @@ class Main extends Component {
                       <th scope="col">Name</th>
                       <th scope="col">Price in ETH</th>
                       <th scope="col">Owners Account</th>
-                      {/* <th scope="col"></th> */}
+                      <th scope="col"></th>
                     </tr>
                   </thead>
                   <tbody id='productList'>
@@ -77,7 +77,7 @@ class Main extends Component {
                           >Buy Me
                             </button>
                             : null
-                        }
+                          }
                           </td>
                         </tr>
                       )
@@ -93,7 +93,7 @@ class Main extends Component {
 
                 <div className="row row-cols-1 row-cols-lg-3 align-items-stretch g-4 py-5">
                   <div className="col">
-                    <div className="card card-cover h-100 overflow-hidden text-white bg-dark rounded-5 shadow-lg" >
+                    <div className="card card-cover h-100 overflow-hidden text-white bg-dark rounded-5 shadow-lg">
                       <div className="d-flex flex-column h-100 p-5 pb-3 text-white text-shadow-1">
                         <h2 className="pt-5 mt-5 mb-4 display-6 lh-1 fw-bold">Short title, long jacket</h2>
                         <ul className="d-flex list-unstyled mt-auto">
@@ -135,7 +135,7 @@ class Main extends Component {
                   </div>
 
                   <div className="col">
-                    <div className="card card-cover h-100 overflow-hidden text-white bg-dark rounded-5 shadow-lg">
+                    <div className="card card-cover h-100 overflow-hidden text-white bg-dark rounded-5 shadow-lg" href="">
                       <div className="d-flex flex-column h-100 p-5 pb-3 text-shadow-1">
                         <h2 className="pt-5 mt-5 mb-4 display-6 lh-1 fw-bold">Another longer title belongs here</h2>
                         <ul className="d-flex list-unstyled mt-auto">

@@ -37,7 +37,7 @@ class App extends Component {
       this.setState({ marketplace })
       const productCount = await marketplace.methods.productCount().call()
       this.setState({ productCount })
-      // Laod products per product vis this fuction then add to blockchain
+      // Load products per product with this function then add to blockchain
       for (var i = 1; i <= productCount; i++) {
         const product = await marketplace.methods.products(i).call()
           this.setState({
