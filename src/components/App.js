@@ -1,102 +1,116 @@
-import React, { Component } from 'react';
+import React, { useState, useEffect } from 'react';
 import './App.css';
-import Web3 from 'web3';
-import Main from './Main'
-import Navbar from './Navbar'
-import Marketplace from '../abis/Marketplace.json'
+import { ethers } from 'ethers';
+import Main from './Main';
+import Navbar from './Navbar';
+import Marketplace from '../abis/Marketplace.json';
 
+const networkId = 1;
 
-class App extends Component {
+const App = () => {
+  const [account, setAccount] = useState('');
+  const [productCount, setProductCount] = useState(0);
+  const [products, setProducts] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [marketplace, setMarketplace] = useState(null);
 
-  async componentDidMount() {
-    await this.loadWeb3() 
-    await this.loadBlockchainData()
-  }
-    async loadWeb3 () {
-      if(window.ethereum) {
-        window.web3 = new Web3(window.ethereum);
-            await window.ethereum.enable();
+  useEffect(() => {
+    const init = async () => {
+      try {
+        await loadWeb3();
+        await loadBlockchainData();
+      } catch (error) {
+        console.error('Initialization error:', error);
+        setLoading(false);
       }
-      else if (window.web3) {
-        window.web3 = new Web3(window.web3.currentProvider);
+    };
+    init();
+  }, []);
+
+  const loadWeb3 = async () => {
+    try {
+      if (window.ethereum) {
+        await window.ethereum.enable();
+        const provider = new ethers.providers.Web3Provider(window.ethereum);
+        const signer = provider.getSigner();
+        const account = await signer.getAddress();
+        setAccount(account);
+        setMarketplace(new ethers.Contract(Marketplace.networks[networkId].address, Marketplace.abi, signer));
+      } else {
+        window.alert('No Ethereum browser detected. Please try Metamask!');
       }
-      else {
-        window.alert(' No Ethereum browser detected. Please try Metamask!');
-      }
+    } catch (error) {
+      console.error('Error loading web3:', error);
+      throw error; // Propagate the error to the caller
     }
-  
-  async loadBlockchainData() {
-    const web3 = window.web3
-    // Load users account on page
-    const accounts = await web3.eth.getAccounts()
-    this.setState({ account: accounts[0] })
-    const networkId = await web3.eth.net.getId()
-    const networkData = await Marketplace.networks[networkId]
-    if(networkData) {
-      const marketplace = web3.eth.Contract(Marketplace.abi, networkData.address)
-      this.setState({ marketplace })
-      const productCount = await marketplace.methods.productCount().call()
-      this.setState({ productCount })
-      // Load products per product with this function then add to blockchain
-      for (var i = 1; i <= productCount; i++) {
-        const product = await marketplace.methods.products(i).call()
-          this.setState({
-            products: [...this.state.products, product]
-          })
+  };
+
+  const loadBlockchainData = async () => {
+    try {
+      const provider = new ethers.providers.Web3Provider(window.ethereum);
+      const signer = provider.getSigner();
+      const account = await signer.getAddress();
+      setAccount(account);
+      const networkId = await provider.getNetwork().chainId;
+      const networkData = Marketplace.networks[networkId];
+
+      if (networkData) {
+        const marketplace = new ethers.Contract(networkData.address, Marketplace.abi, signer);
+        setMarketplace(marketplace);
+
+        const productCount = await marketplace.productCount();
+        setProductCount(productCount.toNumber());
+
+        const products = [];
+        for (let i = 1; i <= productCount; i++) {
+          const product = await marketplace.products(i);
+          products.push(product);
+        }
+        setProducts(products);
+        setLoading(false);
+      } else {
+        window.alert('Marketplace contract not detected on this network!');
       }
-      this.setState({ loading: false })
-      
-    } else {
-      window.alert('Marketplace contract not detected on this network!')
+    } catch (error) {
+      console.error('Error loading blockchain data:', error);
+      throw error; // Propagate the error to the caller
     }
-  }
-  
-  constructor(props) {
-    super(props)
-    this.state = {
-      account: '',
-      productCount: 0,
-      products: [],
-      loading: true
+  };
+
+  const createProduct = async (name, price) => {
+    try {
+      setLoading(true);
+      await marketplace.createProduct(name, price);
+    } catch (error) {
+      console.error('Error creating product:', error);
+    } finally {
+      setLoading(false);
     }
+  };
 
-    this.createProduct = this.createProduct.bind(this)
-    this.purchaseProduct = this.purchaseProduct.bind(this)
-  }
+  const purchaseProduct = async (id, price) => {
+    try {
+      setLoading(true);
+      await marketplace.purchaseProduct(id, { value: ethers.utils.parseEther(price.toString()) });
+    } catch (error) {
+      console.error('Error purchasing product:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-  createProduct(name, price) {
-    this.setState({ loading: true })
-    this.state.marketplace.methods.createProduct(name, price).send({ from: this.state.account })
-    .once('receipt', (receipt) => {
-      this.setState({ loading: false})
-    })
-  }
-
-  purchaseProduct(id, price) {
-    this.setState({ loading: true })
-    this.state.marketplace.methods.purchaseProduct(id).send({ from: this.state.account, value: price })
-    .once('receipt', (receipt) => {
-      this.setState({ loading: false})
-    })
-  }
-
-  render() {
-    return (
-      <div id='content'>
-        <Navbar account={this.state.account}/>
-          { this.state.loading
-              ? <div id="loader" className='text-center'><p className='text-center'>
-                Loading...</p>
-              </div>
-                : <Main 
-                products = { this.state.products }
-                createProduct = {this.createProduct}
-                purchaseProduct = {this.purchaseProduct}
-              />
-          }
-      </div>
-    );
-  }
-}
+  return (
+    <div id='content'>
+      <Navbar account={account} />
+      {loading ? (
+        <div id='loader' className='text-center'>
+          <p className='text-center'>Loading...</p>
+        </div>
+      ) : (
+        <Main products={products} createProduct={createProduct} purchaseProduct={purchaseProduct} />
+      )}
+    </div>
+  );
+};
 
 export default App;
